@@ -1,8 +1,9 @@
 from datetime import datetime, timedelta, timezone
 from passlib.context import CryptContext
 import jwt
+import os
 
-SECRET_KEY = "super-secret-mf"
+SECRET_KEY = os.environ.get("SECRET_KEY", "fallbacksecretkeyforlocal")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES=30
 
@@ -26,3 +27,10 @@ def create_access_token(data, expires_delta) :
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
     return encoded_jwt
+
+def verify_token(token):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return payload.get("sub")
+    except jwt.PyJWTError:
+        return None

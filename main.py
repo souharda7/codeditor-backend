@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta, timezone
-from typing import Optional
+from typing import Optional, EmailStr
 import subprocess
 import os
 import uuid
@@ -51,6 +51,13 @@ def register_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db.refresh(new_user)
     return new_user
 
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
+
 @app.post("/login")
 def login_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db_user = db.query(models.User).filter(models.User.email == user.email).first()
@@ -73,6 +80,30 @@ def login_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
 def get_users(db: Session = Depends(get_db)):
     users = db.query(models.User).all()
     return users
+
+@app.post("/forgot-password")
+def forgot_password(request: ForgotPasswordRequest, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.email == request.email).first()
+
+    if user:
+        reset_token = auth.create_access_token(
+            data={"sub": user.email},
+            expires_delta=timedelta(minutes=15)
+        )
+
+        reset_link = f"https://codeditorcompiler.vercel.app/?reset_token={reset_token}"
+        print("\n" + "="*50)
+        print(f"EMAIL TO: {user.email}")
+        print(f"SUBJECT: Reset your CodeditoR password")
+        print(f"BODY: Click this secure link to reset your password")
+        print(f"{reset_link}")
+        print("="*50 + "\n")
+
+    return {"message" : "If the email exists in our system, a reset link has been sent."}
+
+@app.post("/reset-password")
+def reset_password(request: ResetPasswordRequest, db: Session = Depends(get_db)):
+    email = auth.verify_password
 
 @app.post("/execute")
 def execute_code(submission: CodeSubmission):
