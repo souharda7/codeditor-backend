@@ -103,7 +103,18 @@ def forgot_password(request: ForgotPasswordRequest, db: Session = Depends(get_db
 
 @app.post("/reset-password")
 def reset_password(request: ResetPasswordRequest, db: Session = Depends(get_db)):
-    email = auth.verify_password
+    email = auth.verify_token(request.token)
+    if not email : 
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+    
+    user = db.query(models.User).filter(models.User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=400, detail="User not found")
+    
+    user.password = auth.get_password_hash(request.new_password)
+    db.commit()
+
+    return {"message": "Password successfully reset"}
 
 @app.post("/execute")
 def execute_code(submission: CodeSubmission):
