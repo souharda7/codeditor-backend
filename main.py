@@ -1,9 +1,9 @@
 from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta, timezone
-from typing import Optional, EmailStr
+from typing import Optional
 import subprocess
 import os
 import uuid
